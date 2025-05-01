@@ -26,12 +26,21 @@ class PostHog
       hash.each_with_object({}) { |(k, v), memo| memo[k.to_s] = v }
     end
 
-    # public: Returns a new hash with all the date values in the into iso8601
-    #         strings
+    # public: Transform enumerable Date, Time, DateTime values to iso8601 strings
     #
-    def isoify_dates(hash)
-      hash.each_with_object({}) do |(k, v), memo|
-        memo[k] = datetime_in_iso8601(v)
+    def isoify_dates(something)
+      return something unless something.is_a?(Enumerable)
+
+      something.each_with_object(something.class.new) do |(k, v), memo|
+          if memo.is_a?(Hash)
+            memo[k] = isoify_dates(v)
+          elsif memo.is_a?(Array)
+            memo.push(isoify_dates(k))
+          elsif v.is_a?(DateTime) || v.is_a?(Time) || v.is_a?(Date)
+            v.iso8601
+          else
+            v
+          end
       end
     end
 
@@ -48,19 +57,6 @@ class PostHog
       arr[2] = (arr[2] & 0x0fff) | 0x4000
       arr[3] = (arr[3] & 0x3fff) | 0x8000
       '%08x-%04x-%04x-%04x-%04x%08x' % arr
-    end
-
-    def datetime_in_iso8601(datetime)
-      case datetime
-      when Time
-        time_in_iso8601 datetime
-      when DateTime
-        time_in_iso8601 datetime.to_time
-      when Date
-        date_in_iso8601 datetime
-      else
-        datetime
-      end
     end
 
     def time_in_iso8601(time, fraction_digits = 3)

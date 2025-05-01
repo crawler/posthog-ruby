@@ -126,11 +126,10 @@ class PostHog
         message_id = fields[:message_id].to_s if fields[:message_id]
         send_feature_flags = fields[:send_feature_flags]
 
-        check_timestamp! timestamp
         check_presence! distinct_id, 'distinct_id'
 
-        parsed = {
-          timestamp: datetime_in_iso8601(timestamp),
+        parsed = isoify_dates(fields.merge(
+          timestamp: timestamp,
           library: 'posthog-ruby',
           library_version: PostHog::VERSION.to_s,
           messageId: message_id,
@@ -139,7 +138,7 @@ class PostHog
             '$lib' => 'posthog-ruby',
             '$lib_version' => PostHog::VERSION.to_s
           }
-        }
+        ))
 
         if send_feature_flags
           feature_variants = fields[:feature_variants]
