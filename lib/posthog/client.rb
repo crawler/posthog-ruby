@@ -259,6 +259,8 @@ class PostHog
     def shutdown
       @feature_flags_poller.shutdown_poller
       flush
+      @worker_thread[:should_exit] = true
+      @worker_thread.join
     end
 
     private
