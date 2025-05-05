@@ -50,7 +50,6 @@ class PostHog
         status = error = nil
         on_error =
           proc do |yielded_status, yielded_error|
-            sleep 0.2 # Make this take longer than thread spin-up (below)
             status, error = yielded_status, yielded_error
           end
 
@@ -60,9 +59,8 @@ class PostHog
 
         # This is to ensure that Client#flush doesn't finish before calling
         # the error handler.
-        Thread.new { worker.run }
-        sleep 0.1 # First give thread time to spin-up.
-        sleep 0.01 while worker.is_requesting?
+        thread = Thread.new { worker.run }
+        thread.join
 
         expect(queue).to be_empty
         expect(status).to eq(400)
@@ -113,8 +111,9 @@ class PostHog
       end
 
       it 'returns true if there is a current batch' do
+        requesting_expectation_met = false
         allow_any_instance_of(PostHog::Transport).to receive(:send) do
-          sleep(0.2)
+          sleep(0.01) while !requesting_expectation_met
           PostHog::Response.new(200, 'Success')
         end
 
@@ -124,7 +123,7 @@ class PostHog
 
         worker_thread = Thread.new { worker.run }
         eventually { expect(worker.is_requesting?).to eq(true) }
-
+        requesting_expectation_met = true
         worker_thread.join
         expect(worker.is_requesting?).to eq(false)
       end

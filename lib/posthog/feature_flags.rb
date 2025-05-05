@@ -26,19 +26,17 @@ class PostHog
       @feature_flag_request_timeout_seconds = feature_flag_request_timeout_seconds
       @on_error = on_error || proc { |status, error| }
       @quota_limited = Concurrent::AtomicBoolean.new(false)
+
       @task =
-        Concurrent::TimerTask.new(
-          execution_interval: polling_interval,
-        ) { _load_feature_flags }
+        if @polling_interval.positive?
+          Concurrent::TimerTask.new(execution_interval: polling_interval) { _load_feature_flags }
+        end
 
       # If no personal API key, disable local evaluation & thus polling for definitions
       if @personal_api_key.nil?
         logger.info "No personal API key provided, disabling local evaluation"
         @loaded_flags_successfully_once.make_true
-      else
-        # load once before timer
-        load_feature_flags
-        @task.execute
+        @task&.execute
       end
     end
 
@@ -215,7 +213,7 @@ class PostHog
     end
 
     def shutdown_poller()
-      @task.shutdown
+      @task&.shutdown
     end
 
     # Class methods
@@ -553,13 +551,13 @@ class PostHog
     end
 
     def _request(uri, request_object, timeout = nil)
-      request_object['User-Agent'] = `"posthog-ruby#{PostHog::VERSION}"`
+      request_object['User-Agent'] = "posthog-ruby/#{PostHog::VERSION}"
       request_timeout = timeout || 10
 
       begin
         Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https', :read_timeout => request_timeout) do |http|
           res = http.request(request_object)
-          
+
           # Parse response body to hash
           begin
             response = JSON.parse(res.body, {symbolize_names: true})

@@ -5,4 +5,4 @@ coverage/
 vendor/bundle
 .idea
 .ruby-version
-
+/tmp

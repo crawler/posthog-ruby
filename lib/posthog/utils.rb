@@ -29,25 +29,28 @@ class PostHog
     # public: Transform enumerable Date, Time, DateTime values to iso8601 strings
     #
     def isoify_dates(something)
-      return something unless something.is_a?(Enumerable)
-
-      something.each_with_object(something.class.new) do |(k, v), memo|
-          if memo.is_a?(Hash)
-            memo[k] = isoify_dates(v)
-          elsif memo.is_a?(Array)
-            memo.push(isoify_dates(k))
-          elsif v.is_a?(DateTime) || v.is_a?(Time) || v.is_a?(Date)
-            v.iso8601
-          else
-            v
-          end
+      case something
+      when Enumerable
+        something.each_with_object(something.class.new) do |(k, v), memo|
+            if memo.is_a?(Hash)
+              memo[k] = isoify_dates(v)
+            else
+              memo.push(isoify_dates(k))
+            end
+        end
+      when DateTime, Time
+        something.iso8601(6)
+      when Date
+        something.iso8601
+      else
+        something
       end
     end
 
     # public: Converts all the date values in the into iso8601 strings in place
     #
     def isoify_dates!(hash)
-      hash.replace isoify_dates hash
+      hash.replace isoify_dates(hash)
     end
 
     # public: Returns a uid string

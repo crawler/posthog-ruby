@@ -317,8 +317,8 @@ class PostHog
         }
 
         stub_request(:post, decide_endpoint)
-        .to_return(status: 200, body:{"featureFlags": {"decide-flag": "decide-value"}}.to_json)  
-        
+        .to_return(status: 200, body:{"featureFlags": {"decide-flag": "decide-value"}}.to_json)
+
         stub_request(
           :get,
           'https://app.posthog.com/api/feature_flag/local_evaluation?token=testsecret'
@@ -649,7 +649,7 @@ class PostHog
             "company": {"$group_key": "id:5", "x": "y"},
             "instance": {"$group_key": "app.posthog.com"}
           }, "person_properties": {"distinct_id": "some_id", "x1": "y1"}, "token": "testsecret"})
-        
+
         WebMock.reset_executed_requests!
 
         client.get_feature_flag('random_key', 'some_id', groups: {"company" => "id:5", "instance" => "app.posthog.com"}, person_properties: {"distinct_id" => "override" }, group_properties: {"company" => {"$group_key" => "group_override"}})

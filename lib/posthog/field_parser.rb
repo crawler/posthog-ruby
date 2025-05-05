@@ -30,9 +30,7 @@ class PostHog
           common[:uuid] = uuid
         end
 
-        isoify_dates! properties
-
-        common.merge(
+        isoify_dates! common.merge(
           {
             type: 'capture',
             event: event.to_s,
@@ -50,9 +48,7 @@ class PostHog
         properties = fields[:properties] || {}
         check_is_hash!(properties, 'properties')
 
-        isoify_dates! properties
-
-        common.merge(
+        isoify_dates! common.merge(
           {
             type: 'identify',
             event: '$identify',
@@ -74,9 +70,7 @@ class PostHog
         fields[:distinct_id] ||= "$#{group_type}_#{group_key}"
         common = parse_common_fields(fields)
 
-        isoify_dates! properties
-
-        common.merge(
+        isoify_dates! common.merge(
           {
             event: '$groupidentify',
             properties: {

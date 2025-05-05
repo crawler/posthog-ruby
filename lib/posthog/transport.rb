@@ -24,7 +24,7 @@ class PostHog
       options[:host] = !options[:host].nil? ? options[:host] : HOST
       options[:port] = !options[:port].nil? ? options[:port] : PORT
       options[:ssl] = !options[:ssl].nil? ? options[:ssl] : SSL
-      
+
       @headers = options[:headers] || HEADERS
       @path = options[:path] || PATH
       @retries = options[:retries] || RETRIES

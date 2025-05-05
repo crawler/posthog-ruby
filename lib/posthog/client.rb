@@ -54,6 +54,8 @@ class PostHog
           opts[:on_error]
         )
 
+      @feature_flags_poller.load_feature_flags(true) if @personal_api_key && !opts[:skip_feature_flags_preload]
+
       @distinct_id_has_sent_flag_calls = SizeLimitedHash.new(Defaults::MAX_HASH_SIZE) { |hash, key| hash[key] = Array.new }
     end
 
@@ -64,7 +66,7 @@ class PostHog
     def flush
       while !@queue.empty? || @worker.is_requesting?
         ensure_worker_running
-        sleep(0.1)
+        @worker_thread.join
       end
     end
 

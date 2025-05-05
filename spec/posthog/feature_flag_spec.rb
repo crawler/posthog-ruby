@@ -8,7 +8,7 @@ class PostHog
   decide_endpoint = 'https://app.posthog.com/decide/?v=3'
 
   describe 'local evaluation' do
-  
+
     it 'evaluates person properties' do
       api_feature_flag_res = {
         "flags": [
@@ -102,10 +102,10 @@ class PostHog
       expect(c.get_feature_flag("group-flag", "some-distinct-2", groups: {"company" => "amazon_without_rollout"}, group_properties: {"company" => {"name" => "Project Name 1"}})).to eq(true)
       expect(c.get_feature_flag("group-flag", "some-distinct-2", groups: {"company": "amazon_without_rollout"}, group_properties: {"company" => {"name" => "Project Name 1"}})).to eq(true)
       expect(c.get_feature_flag("group-flag", "some-distinct-2", groups: {"company" => "amazon_without_rollout"}, group_properties: {"company" => {"name": "Project Name 1"}})).to eq(true)
-      
+
       # rollout % not met
       expect(c.get_feature_flag("group-flag", "some-distinct-2", groups: {"company" => "amazon"}, group_properties: {"company" => {"name" => "Project Name 1"}})).to eq(false)
-      
+
       # property mismatch
       expect(c.get_feature_flag("group-flag", "some-distinct-2", groups: {"company" => "amazon_without_rollout"}, group_properties: {"company" => {"name" => "Project Name 2"}})).to eq(false)
 
@@ -224,33 +224,33 @@ class PostHog
       expect(c.get_feature_flag("complex-flag", "some-distinct-id", person_properties: {"region" => "USA", "name" => "Aloha"})).to eq(true)
       expect(c.get_feature_flag("complex-flag", "some-distinct-id", person_properties: {"region": "USA", "name": "Aloha"})).to eq(true)
       assert_not_requested :post, decide_endpoint
-      
-      
+
+
       # this distinctIDs hash is < rollout %
       expect(c.get_feature_flag("complex-flag", "some-distinct-id_within_rollout?", person_properties: {"region" => "USA", "email" => "a@b.com"})).to eq(true)
       assert_not_requested :post, decide_endpoint
-      
+
       # will fall back on `/decide`, as all properties present for second group, but that group resolves to false
       expect(c.get_feature_flag("complex-flag", "some-distinct-id_outside_rollout?", person_properties: {"region" => "USA", "email" => "a@b.com"})).to eq("decide-fallback-value")
       assert_requested :post, decide_endpoint, times: 1
       expect(WebMock).to have_requested(:post, decide_endpoint).with(
         body: {"distinct_id": "some-distinct-id_outside_rollout?", "groups": {}, "group_properties": {}, "person_properties": {"distinct_id": "some-distinct-id_outside_rollout?", "region" => "USA", "email" => "a@b.com"}, "token": "testsecret"})
-      
+
       WebMock.reset_executed_requests!
-      
+
       # same as above
       expect(c.get_feature_flag("complex-flag", "some-distinct-id", person_properties: {"doesnt_matter" => "1"})).to eq("decide-fallback-value")
       assert_requested :post, decide_endpoint, times: 1
-      
+
       expect(WebMock).to have_requested(:post, decide_endpoint).with(
         body: {"distinct_id": "some-distinct-id", "groups": {}, "group_properties": {}, "person_properties": {"distinct_id": "some-distinct-id", "doesnt_matter" => "1"}, "token": "testsecret"})
-        
+
       WebMock.reset_executed_requests!
-      
+
       expect(c.get_feature_flag("complex-flag", "some-distinct-id", person_properties: {"region" => "USA"})).to eq("decide-fallback-value")
       assert_requested :post, decide_endpoint, times: 1
       WebMock.reset_executed_requests!
-      
+
       # won't need to fallback when all values are present, and resolves to False
       expect(c.get_feature_flag("complex-flag", "some-distinct-id_outside_rollout?", person_properties: {"region" => "USA", "email" => "a@b.com", "name" => "X", "doesnt_matter" => "1"})).to eq(false)
       assert_not_requested :post, decide_endpoint
@@ -482,12 +482,12 @@ class PostHog
 
       stub_request(:post, decide_endpoint)
       .to_return(status: 400, body: {"error": "went wrong!"}.to_json)
-
-      c = Client.new(api_key: API_KEY, personal_api_key: API_KEY, test_mode: true, on_error: Proc.new { |status, body| print "error: #{status}, #{body}" })
-
+      message = ''
+      c = Client.new(api_key: API_KEY, personal_api_key: API_KEY, test_mode: true, on_error: Proc.new { |status, body| message << "error: #{status}, #{body}" })
       # beta-feature2 falls back to decide, which on error returns default
       expect(c.get_feature_flag("beta-feature2", "some-distinct-id")).to be(nil)
       expect(c.is_feature_enabled("beta-feature2", "some-distinct-id")).to be(nil)
+      expect(message).to match(/Error computing flag remotely/)
       assert_requested :post, decide_endpoint, times: 2
       WebMock.reset_executed_requests!
     end
@@ -1043,7 +1043,7 @@ class PostHog
       expect(c.get_feature_flag("beta-feature", "example_id")).to eq("second-variant")
       assert_not_requested :post, decide_endpoint
     end
-    
+
     it 'gets feature flag with multiple variant overrides' do
       api_feature_flag_res = {
         "flags": [
@@ -1107,7 +1107,7 @@ class PostHog
         expect(FeatureFlagsPoller.match_property(property_a, { 'key' => 'value2' })).to be false
         expect(FeatureFlagsPoller.match_property(property_a, { 'key' => '' })).to be false
         expect(FeatureFlagsPoller.match_property(property_a, { 'key' => nil })).to be false
-        
+
         expect { FeatureFlagsPoller.match_property(property_a, { 'key2' => 'value' }) }.to raise_error(InconclusiveMatchError)
         expect { FeatureFlagsPoller.match_property(property_a, {}) }.to raise_error(InconclusiveMatchError)
 
@@ -1134,7 +1134,7 @@ class PostHog
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => 'value2' })).to be true
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => '' })).to be true
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => nil })).to be true
-      
+
       expect { FeatureFlagsPoller.match_property(property_a, { 'key2' => 'value' }) }.to raise_error(InconclusiveMatchError)
       expect { FeatureFlagsPoller.match_property(property_a, {}) }.to raise_error(InconclusiveMatchError)
 
@@ -1161,7 +1161,7 @@ class PostHog
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => 'value2' })).to be true
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => '' })).to be true
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => nil })).to be true
-      
+
       expect { FeatureFlagsPoller.match_property(property_a, { 'key2' => 'value' }) }.to raise_error(InconclusiveMatchError)
       expect { FeatureFlagsPoller.match_property(property_a, {}) }.to raise_error(InconclusiveMatchError)
 
@@ -1179,7 +1179,7 @@ class PostHog
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => nil })).to be false
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => 1234 })).to be false
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => '1234' })).to be false
-      
+
       expect { FeatureFlagsPoller.match_property(property_a, { 'key2' => 'value' }) }.to raise_error(InconclusiveMatchError)
       expect { FeatureFlagsPoller.match_property(property_a, {}) }.to raise_error(InconclusiveMatchError)
 
@@ -1188,7 +1188,7 @@ class PostHog
       expect(FeatureFlagsPoller.match_property(property_b, { 'key' => '3' })).to be true
       expect(FeatureFlagsPoller.match_property(property_b, { 'key' => 323 })).to be true
       expect(FeatureFlagsPoller.match_property(property_b, { 'key' => 'val3' })).to be true
-      
+
       expect(FeatureFlagsPoller.match_property(property_b, { 'key' => 'three' })).to be false
 
     end
@@ -1204,7 +1204,7 @@ class PostHog
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => '.com343tfvalue5' })).to be false
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => nil })).to be false
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => '' })).to be false
-      
+
       expect { FeatureFlagsPoller.match_property(property_a, { 'key2' => 'value' }) }.to raise_error(InconclusiveMatchError)
       expect { FeatureFlagsPoller.match_property(property_a, {}) }.to raise_error(InconclusiveMatchError)
 
@@ -1213,7 +1213,7 @@ class PostHog
       expect(FeatureFlagsPoller.match_property(property_b, { 'key' => '3' })).to be true
       expect(FeatureFlagsPoller.match_property(property_b, { 'key' => 323 })).to be true
       expect(FeatureFlagsPoller.match_property(property_b, { 'key' => 'val3' })).to be true
-      
+
       expect(FeatureFlagsPoller.match_property(property_b, { 'key' => 'three' })).to be false
 
 
@@ -1260,7 +1260,7 @@ class PostHog
       property_c = { 'key' => 'key', 'value' => 1, 'operator' => 'gte' }
       expect(FeatureFlagsPoller.match_property(property_c, { 'key' => 2 })).to be true
       expect(FeatureFlagsPoller.match_property(property_c, { 'key' => 1 })).to be true
-      
+
       expect(FeatureFlagsPoller.match_property(property_c, { 'key' => 0 })).to be false
       expect(FeatureFlagsPoller.match_property(property_c, { 'key' => -1 })).to be false
       expect(FeatureFlagsPoller.match_property(property_c, { 'key' => -3 })).to be false
@@ -1269,7 +1269,7 @@ class PostHog
       property_d = { 'key' => 'key', 'value' => '43', 'operator' => 'lte' }
       expect(FeatureFlagsPoller.match_property(property_d, { 'key' => '43' })).to be true
       expect(FeatureFlagsPoller.match_property(property_d, { 'key' => '42' })).to be true
-      
+
       expect(FeatureFlagsPoller.match_property(property_d, { 'key' => '44' })).to be false
       expect(FeatureFlagsPoller.match_property(property_d, { 'key' => 44 })).to be false
       expect(FeatureFlagsPoller.match_property(property_d, { 'key' => 42 })).to be true
@@ -1431,7 +1431,7 @@ class PostHog
 
     it 'with none property value with all operators' do
       property_a = { 'key' => 'key', 'value' => 'nil', 'operator' => 'is_not' }
-      expect(FeatureFlagsPoller.match_property(property_a, { 'key' => nil })).to be true 
+      expect(FeatureFlagsPoller.match_property(property_a, { 'key' => nil })).to be true
       # nil to string here is an empty string, not "nil" so it's true because it doesn't match
       expect(FeatureFlagsPoller.match_property(property_a, { 'key' => 'ni' })).to be true
 
@@ -1460,7 +1460,7 @@ class PostHog
 
       property_j = { 'key' => 'key', 'value' => '2022-05-01', 'operator' => 'is_date_after' }
       expect{ FeatureFlagsPoller.match_property(property_j, { 'key' => nil }) }.to raise_error(InconclusiveMatchError)
-      
+
       property_k = { 'key' => 'key', 'value' => '2022-05-01', 'operator' => 'is_date_before' }
       expect{ FeatureFlagsPoller.match_property(property_k, { 'key' => 'random' }) }.to raise_error(InconclusiveMatchError)
     end
@@ -3882,7 +3882,7 @@ class PostHog
           :get,
           'https://app.posthog.com/api/feature_flag/local_evaluation?token=testsecret'
         ).to_return(status: 200, body: {"flags": [basic_flag, disabled_flag]}.to_json)
-  
+
         stub_request(:post, decide_endpoint)
           .to_return(status: 200, body:{
           "featureFlags": {"beta-feature": "variant-1", "beta-feature2": "variant-2"}
@@ -4147,7 +4147,7 @@ class PostHog
             'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3',
             'Content-Type'=>'application/json',
             'Host'=>'app.posthog.com',
-            'User-Agent'=>''
+            'User-Agent' => "posthog-ruby/#{PostHog::VERSION}"
           }).
         to_return(status: 200, body: "{\"featureFlags\": {}}", headers: {})
 
